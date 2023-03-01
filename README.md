@@ -37,6 +37,10 @@ After your modifications:
    additional code (for instance, extracting the constant parameters
    based on exercise date and strike) should be written just once.
 
+To compile and run the program on your machine you'll need QuantLib
+installed; instructions to do that for different operating systems are
+at <https://www.quantlib.org/install.shtml>.
+
 
 ## How to submit your solution
 
