@@ -78,6 +78,7 @@ int main() {
 
         Size width = 15;
         auto spacer = std::setw(width);
+        std::cout << "Hello" << std::endl;
         std::cout << std::setw(40) << "old engine"
                   << std::setw(30) << "non constant"
                   << std::setw(30) << "constant"
@@ -267,6 +268,8 @@ int main() {
         std::cout << spacer << NPV << spacer << us / 1000000 << std::endl;
 
         // All done
+
+        std::cin.ignore();
 
         return 0;
 
