@@ -43,6 +43,7 @@ namespace QuantLib {
     template <class RNG = PseudoRandom, class S = Statistics>
     class MCEuropeanEngine_2 : public MCVanillaEngine<SingleVariate, RNG, S> {
     public:
+        bool constantParams;
         typedef typename MCVanillaEngine<SingleVariate, RNG, S>::path_generator_type
             path_generator_type;
         typedef
@@ -63,35 +64,32 @@ namespace QuantLib {
             BigNatural seed,
             bool constantParams);
     protected:
-        bool constantParams_;
-
         boost::shared_ptr<path_pricer_type> pathPricer() const;
         ext::shared_ptr<path_generator_type> pathGenerator() const override {
-            Size dimensions = MCEuropeanEngine_2<RNG, S>::process_->factors();
+            Size dimensions = process_->factors();
             TimeGrid grid = this->timeGrid();
             typename RNG::rsg_type generator =
-                RNG::make_sequence_generator(dimensions * (grid.size() - 1), MCVanillaEngine<SingleVariate, RNG, S>::seed_);
-            if (constantParams_) {
-                ext::shared_ptr <GeneralizedBlackScholesProcess> BS_process = ext::dynamic_pointer_cast<GeneralizedBlackScholesProcess>(this->process_);
-
+                RNG::make_sequence_generator(dimensions * (grid.size() - 1), seed_);
+            if (constantParams) {
+                ext::shared_ptr <GeneralizedBlackScholesProcess> blackSC_process = ext::dynamic_pointer_cast<GeneralizedBlackScholesProcess>(this->process_);
                 Time T = grid.back(); //Exercise date
                 double strike = ext::dynamic_pointer_cast<StrikedTypePayoff>(MCEuropeanEngine_2<RNG, S>::arguments_.payoff)->strike();
-                double spot = BS_process->x0();
-                double rf = BS_process->riskFreeRate()->zeroRate(T, Continuous, NoFrequency);
-                double div = BS_process->dividendYield()->zeroRate(T, Continuous, NoFrequency);
-                double vol = BS_process->blackVolatility()->blackVol(T, strike);
+                double spot = ext::dynamic_pointer_cast<StrikedTypePayoff>(MCEuropeanEngine_2<RNG, S>::arguments_.payoff)->strike();
+                double rf = blackSC_process->riskFreeRate()->zeroRate(T, Continuous, NoFrequency);
+                double div = blackSC_process->dividendYield()->zeroRate(T, Continuous, NoFrequency);
+                double vol = blackSC_process->blackVolatility()->blackVol(T, strike);
 
                 ext::shared_ptr<ConstantBlackScholesProcess> const_BS_process(
                     new ConstantBlackScholesProcess(spot, rf, div, vol));
 
                 return ext::shared_ptr<path_generator_type>(
                     new path_generator_type(const_BS_process, grid,
-                        generator, MCVanillaEngine<SingleVariate, RNG, S>::brownianBridge_));
+                        generator, brownianBridge_));
             }
             else {
                 return ext::shared_ptr<path_generator_type>(
-                    new path_generator_type(MCVanillaEngine<SingleVariate, RNG, S>::process_, grid,
-                        generator, MCVanillaEngine<SingleVariate, RNG, S>::brownianBridge_));
+                    new path_generator_type(process_, grid,
+                        generator, brownianBridge_));
             }
         }
     };
@@ -111,7 +109,7 @@ namespace QuantLib {
         MakeMCEuropeanEngine_2& withMaxSamples(Size samples);
         MakeMCEuropeanEngine_2& withSeed(BigNatural seed);
         MakeMCEuropeanEngine_2& withAntitheticVariate(bool b = true);
-        MakeMCEuropeanEngine_2& withConstantParameters(bool constantParams);
+        MakeMCEuropeanEngine_2& withConstantParameters(bool b = true);
         // conversion to pricing engine
         operator boost::shared_ptr<PricingEngine>() const;
       private:
@@ -121,7 +119,7 @@ namespace QuantLib {
         Real tolerance_;
         bool brownianBridge_;
         BigNatural seed_;
-        bool constantParams_;
+        bool constantParams;
     };
 
     class EuropeanPathPricer_2 : public PathPricer<Path> {
@@ -159,7 +157,9 @@ namespace QuantLib {
                                            false,
                                            requiredSamples,
                                            requiredTolerance,
-                                           maxSamples,seed) {constantParams_ = constantParams;}
+                                           maxSamples,
+                                           seed) {}
+
 
     template <class RNG, class S>
     inline
@@ -191,7 +191,7 @@ namespace QuantLib {
     : process_(process), antithetic_(false),
       steps_(Null<Size>()), stepsPerYear_(Null<Size>()),
       samples_(Null<Size>()), maxSamples_(Null<Size>()),
-      tolerance_(Null<Real>()), brownianBridge_(false), seed_(0), constantParams_(false) {}
+      tolerance_(Null<Real>()), brownianBridge_(false), seed_(0) {}
 
     template <class RNG, class S>
     inline MakeMCEuropeanEngine_2<RNG,S>&
@@ -258,8 +258,8 @@ namespace QuantLib {
 
     template <class RNG, class S>
     inline MakeMCEuropeanEngine_2<RNG,S>&
-    MakeMCEuropeanEngine_2<RNG,S>::withConstantParameters(bool constantParams) {
-        constantParams_ = constantParams;
+    MakeMCEuropeanEngine_2<RNG,S>::withConstantParameters(bool b) {
+        constantParams = b;
         return *this;
     }
 
@@ -280,7 +280,7 @@ namespace QuantLib {
                                       samples_, tolerance_,
                                       maxSamples_,
                                       seed_,
-                                      constantParams_));
+                                      constantParams));
     }
 
 
