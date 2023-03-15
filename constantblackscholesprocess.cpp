@@ -1,7 +1,8 @@
 #include "constantblackscholesprocess.hpp"
+#include <ql/processes/eulerdiscretization.hpp>
 
 namespace QuantLib {
-	ConstantBlackScholesProcess::ConstantBlackScholesProcess(double SPOT_VAL, double RF, double DIV_YIELD, double VOL)
+	ConstantBlackScholesProcess::ConstantBlackScholesProcess(double SPOT_VAL, double RF, double DIV_YIELD, double VOL):StochasticProcess1D(ext::make_shared<EulerDiscretization>())
 	{
 		spot_val = SPOT_VAL;
 		rf = RF;
@@ -46,5 +47,9 @@ namespace QuantLib {
 	Real ConstantBlackScholesProcess::diffusion(Time t, Real x) const
 	{
 		return this->getVol();
+	}
+	Real ConstantBlackScholesProcess::apply(Real x0, Real dx) const
+	{
+		return x0 * std::exp(dx);
 	}
 }
