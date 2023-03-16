@@ -1,6 +1,7 @@
 #ifndef CONSTANTBLACKSCHOLESPROCESS
 #define CONSTANTBLACKSCHOLESPROCESS
 #include <ql/stochasticprocess.hpp>
+#include <ql/processes/blackscholesprocess.hpp>
 
 namespace QuantLib {
 
@@ -14,6 +15,7 @@ namespace QuantLib {
 
     public:
         ConstantBlackScholesProcess(double spot_val, double rf, double div_yield, double vol);
+        ConstantBlackScholesProcess(GeneralizedBlackScholesProcess process, Time T, double strike); //Constructor from a general BS process (avoid copy paste of code)
         ~ConstantBlackScholesProcess();
 
         double getSpot_val() const;

@@ -72,17 +72,12 @@ namespace QuantLib {
             typename RNG::rsg_type generator =
                 RNG::make_sequence_generator(dimensions * (grid.size() - 1), MCVanillaEngine<SingleVariate, RNG, S>::seed_);
             if (constantParams_) {
-                ext::shared_ptr <GeneralizedBlackScholesProcess> BS_process = ext::dynamic_pointer_cast<GeneralizedBlackScholesProcess>(this->process_);
-
                 Time T = grid.back(); //Exercise date
                 double strike = ext::dynamic_pointer_cast<StrikedTypePayoff>(MCEuropeanEngine_2<RNG, S>::arguments_.payoff)->strike();
-                double spot = BS_process->x0();
-                double rf = BS_process->riskFreeRate()->zeroRate(T, Continuous, NoFrequency);
-                double div = BS_process->dividendYield()->zeroRate(T, Continuous, NoFrequency);
-                double vol = BS_process->blackVolatility()->blackVol(T, strike);
+                ext::shared_ptr <GeneralizedBlackScholesProcess> BS_process = ext::dynamic_pointer_cast<GeneralizedBlackScholesProcess>(this->process_);
 
                 ext::shared_ptr<ConstantBlackScholesProcess> const_BS_process(
-                    new ConstantBlackScholesProcess(spot, rf, div, vol));
+                    new ConstantBlackScholesProcess(*BS_process, T, strike)); //We use the suitable constructor
 
                 return ext::shared_ptr<path_generator_type>(
                     new path_generator_type(const_BS_process, grid,

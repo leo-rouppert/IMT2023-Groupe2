@@ -10,6 +10,14 @@ namespace QuantLib {
 		vol = VOL;
 	}
 
+	ConstantBlackScholesProcess::ConstantBlackScholesProcess(GeneralizedBlackScholesProcess process, Time T, double strike)
+	{
+		spot_val = process.x0();
+		rf = process.riskFreeRate()->zeroRate(T, Continuous, NoFrequency);
+		div_yield = process.dividendYield()->zeroRate(T, Continuous, NoFrequency);
+		vol = process.blackVolatility()->blackVol(T, strike);
+	}
+
 	ConstantBlackScholesProcess::~ConstantBlackScholesProcess()
 	{
 	}
