@@ -75,7 +75,8 @@ namespace QuantLib {
                           Real requiredTolerance,
                           Size maxSamples,
                           bool isBiased,
-                          BigNatural seed);
+                          BigNatural seed,
+                          bool constantParams);
         void calculate() const override {
             Real spot = process_->x0();
             QL_REQUIRE(spot > 0.0, "negative or null underlying given");
@@ -93,12 +94,29 @@ namespace QuantLib {
         // McSimulation implementation
         TimeGrid timeGrid() const override;
         ext::shared_ptr<path_generator_type> pathGenerator() const override {
+            
             TimeGrid grid = timeGrid();
             typename RNG::rsg_type gen =
-                RNG::make_sequence_generator(grid.size()-1,seed_);
-            return ext::shared_ptr<path_generator_type>(
-                         new path_generator_type(process_,
-                                                 grid, gen, brownianBridge_));
+                RNG::make_sequence_generator(grid.size() - 1, seed_);
+
+            if (constantParams_) {
+                Time T = grid.back(); //Exercise date
+                double strike = ext::dynamic_pointer_cast<StrikedTypePayoff>(MCBarrierEngine_2<RNG, S>::arguments_.payoff)->strike();
+
+                ext::shared_ptr <GeneralizedBlackScholesProcess> BS_process = ext::dynamic_pointer_cast<GeneralizedBlackScholesProcess>(this->process_);
+
+                ext::shared_ptr<ConstantBlackScholesProcess> const_BS_process(
+                    new ConstantBlackScholesProcess(*BS_process, T, strike)); //We use the suitable constructor
+
+                return ext::shared_ptr<path_generator_type>(
+                    new path_generator_type(const_BS_process, grid,
+                        gen, brownianBridge_));
+            }
+            else {
+                return ext::shared_ptr<path_generator_type>(
+                    new path_generator_type(process_,
+                        grid, gen, brownianBridge_));
+            }
         }
         ext::shared_ptr<path_pricer_type> pathPricer() const override;
         // data members
@@ -109,6 +127,7 @@ namespace QuantLib {
         bool isBiased_;
         bool brownianBridge_;
         BigNatural seed_;
+        bool constantParams_;
     };
 
 
@@ -127,7 +146,7 @@ namespace QuantLib {
         MakeMCBarrierEngine_2& withMaxSamples(Size samples);
         MakeMCBarrierEngine_2& withBias(bool b = true);
         MakeMCBarrierEngine_2& withSeed(BigNatural seed);
-        MakeMCBarrierEngine_2& withConstantParameters(bool b = true);
+        MakeMCBarrierEngine_2& withConstantParameters(bool constantParams);
         // conversion to pricing engine
         operator ext::shared_ptr<PricingEngine>() const;
       private:
@@ -136,6 +155,7 @@ namespace QuantLib {
         Size steps_, stepsPerYear_, samples_, maxSamples_;
         Real tolerance_;
         BigNatural seed_ = 0;
+        bool constantParams_;
     };
 
 
@@ -152,11 +172,13 @@ namespace QuantLib {
         Real requiredTolerance,
         Size maxSamples,
         bool isBiased,
-        BigNatural seed)
+        BigNatural seed,
+        bool constantParams)
     : McSimulation<SingleVariate, RNG, S>(antitheticVariate, false), process_(std::move(process)),
       timeSteps_(timeSteps), timeStepsPerYear_(timeStepsPerYear), requiredSamples_(requiredSamples),
       maxSamples_(maxSamples), requiredTolerance_(requiredTolerance), isBiased_(isBiased),
-      brownianBridge_(brownianBridge), seed_(seed) {
+      brownianBridge_(brownianBridge), seed_(seed), constantParams_(false) {
+        constantParams_ = constantParams;
         QL_REQUIRE(timeSteps != Null<Size>() ||
                    timeStepsPerYear != Null<Size>(),
                    "no time steps provided");
@@ -307,7 +329,8 @@ namespace QuantLib {
 
     template <class RNG, class S>
     inline MakeMCBarrierEngine_2<RNG,S>&
-    MakeMCBarrierEngine_2<RNG,S>::withConstantParameters(bool b) {
+    MakeMCBarrierEngine_2<RNG,S>::withConstantParameters(bool constantParams) {
+        constantParams_ = constantParams;
         return *this;
     }
 
@@ -327,7 +350,8 @@ namespace QuantLib {
                                      samples_, tolerance_,
                                      maxSamples_,
                                      biased_,
-                                     seed_));
+                                     seed_,
+                                     constantParams_));
     }
 
 }
