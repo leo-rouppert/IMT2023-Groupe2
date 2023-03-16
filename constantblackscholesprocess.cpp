@@ -10,7 +10,7 @@ namespace QuantLib {
 		vol = VOL;
 	}
 
-	ConstantBlackScholesProcess::ConstantBlackScholesProcess(GeneralizedBlackScholesProcess process, Time T, double strike)
+	ConstantBlackScholesProcess::ConstantBlackScholesProcess(GeneralizedBlackScholesProcess process, Time T, double strike) : ConstantBlackScholesProcess(spot_val, rf, div_yield, vol)
 	{
 		spot_val = process.x0();
 		rf = process.riskFreeRate()->zeroRate(T, Continuous, NoFrequency);
